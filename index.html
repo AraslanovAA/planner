@@ -5,6 +5,9 @@
   <title>planner</title>
   
   <style>
+@import url(https://fonts.googleapis.com/css?family=Open+Sans);
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:300,400);
+
       html, body {
         height: 100%;
         margin: 0;
@@ -85,9 +88,67 @@
         grid-row-start: 2;
         grid-column-start: 8;
        }
-        .log{
+        .backlog{
         height: 100%;
-        background-color: cadetblue;
+        background-color:rgb(201, 216, 231);
+        display: flex;
+        flex-direction: column;
+      }
+      .backlog-head{
+        text-align: center;
+        margin-top: 5px;
+      }
+      
+      
+
+.search-container{
+  
+  display: flex;
+  margin: 5px;
+  width: 100%;
+  
+}
+
+input#search-bar{
+  
+  
+  height: 35px;
+  flex-basis: calc(95% - 45px);
+  font-size: 1rem;
+  border: 1px solid #D0CFCE;
+  outline: none;
+ 
+ }
+
+ .span-indent{height:35px; width:35px; display:block; position:relative; margin: 5px; cursor: pointer;}
+
+.lupa:before, .lupa:after{content:''; height:20px; display:block; position:absolute; top:0; left:0; }
+
+.lupa:before{width:20px; border:3px #333 solid; border-radius:100%;-webkit-border-radius:100%;-moz-border-radius:100%;}
+
+.lupa:after{width:7px; background:#333; transform:rotate(-45deg);-webkit-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-o-transform:rotate(-45deg);-ms-transform:rotate(-45deg); top:17px; left:24px;}
+
+
+     
+
+
+
+
+      .task{
+          margin: 5px;
+          padding: 5px;
+          background-color: rgb(162, 190, 216);
+          border-radius: 6px; 
+      }
+      
+      .creationAuthor{
+          padding: 5px;
+          font: bold italic large Palatino, serif;
+          color: rgb(68, 138, 218);
+      }
+      .description{
+          margin: 5px;
+          font: 400 .9em 'Open Sans', sans-serif;
       }
   </style>
  </head>
@@ -116,7 +177,30 @@
         
 
     </div>
-    <div class="item log"></div>
+    <div class="backlog">
+    
+    <div class="backlog-head"><b>BACKLOG</b></div>
+   
+
+
+    <div class="search-container">
+        <input type="text" id="search-bar" placeholder="Поиск">
+        <span class="span-indent lupa"></span>
+    </div>
+
+
+
+
+
+
+
+    <div class="task">
+        <span class="creationAuthor">text1</span>
+        <div class="description">Тестиров</div>
+    </div>
+
+
+    </div>
 
   </div>
 
@@ -131,7 +215,7 @@
 
 
 
-
+  
   <script src="planner.js" type="text/javascript"></script>
  </body>
 </html>
