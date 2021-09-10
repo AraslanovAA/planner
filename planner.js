@@ -1,14 +1,67 @@
 /*
 TODO list:
-6. работа search элемента
 7. мобильная версия без бэклога
 */
 let left_day;
 let today;
 let users;
-
 let planner_tasks=[];
 let backlog_tasks =[];
+let backlog_tasks_search = [];
+var backlog_input;
+
+
+
+ function drawSearchBaclLog(){
+  document.getElementById('backlog').innerHTML = '';
+  //TODO не лупа и другая функция
+  document.getElementById('backlog').innerHTML = `<div class="backlog-head"><b>BACKLOG</b></div>
+                                                  <div class="search-container">
+                                                  <input type="text" id="search-bar" placeholder="Поиск">
+                                                  <img src="cross.png" class = "image" onclick="drawBaclLog()">
+                                                   </div>`
+  
+  backlog_input = document.getElementById('search-bar');
+  backlog_input.addEventListener('input', function(){
+  if(backlog_input.value.length >= 15){
+      backlog_input.value = backlog_input.value.substring(0, backlog_input.value.length - 1)
+    }
+    });
+
+  let whoCreatedTask = '';
+  
+  for(let i=0;i<backlog_tasks_search.length;i++){
+
+         
+         whoCreatedTask = users.filter(user => user['id']== backlog_tasks_search[i]['creationAuthor']);
+
+         newDiv = document.createElement("div");
+         newDiv.setAttribute('class', 'task');            
+         newDiv.setAttribute('id', backlog_tasks_search[i]['id']);
+         newDiv.innerHTML ='<span class="creationAuthor">'+whoCreatedTask[0]['username']+'</span> <div class="description">'+ backlog_tasks_search[i]['subject']+'</div>';                
+         document.getElementById('backlog').append(newDiv);
+      
+  }
+  dragAndDrop();
+
+}
+
+
+function backlog_search(){
+  
+  let whatToSearch = backlog_input.value;
+    
+  backlog_tasks_search = backlog_tasks.filter(task => (whatToSearch.toUpperCase() == task['subject'].toUpperCase()))
+  
+  if(backlog_tasks_search.length == 0){
+      //alert('таких задач не обнаружено');
+      document.getElementById('backlog').display = 'none';
+  }
+  else{
+    drawSearchBaclLog();
+  }
+
+}
 
 function showDate(){
     let res;
@@ -114,15 +167,20 @@ async function onLoad(){
             При загрузке страницы происходит загрузка существующих пользователей планироващика
             Строится грид на соответсвтующее количество строк
         */
-           let result = await fetch('http://localhost:3000/users', {
-            method : 'GET',
-            header : {
-              'Content-Type' : 'application/json'
-            }
-         
-          });
+        
+            
+          let result = '[{"id":1,"username":"user1","surname":"Петров","firstName":"Иван","secondName":""},{"id":2,"username":"user2","surname":"Иванов","firstName":"Пётр","secondName":""},{"id":3,"username":"user3","surname":"Васильев","firstName":"Артём","secondName":""},{"id":4,"username":"user4","surname":"Кузнецов","firstName":"Сергей","secondName":""},{"id":5,"username":"user5","surname":"Некрасов","firstName":"Артём","secondName":""}]';
+          let resultJSON = JSON.parse(result);
+          //  let result = await fetch('http://localhost:3000/users', {
+          //   method : 'GET',
+          //   header : {
+          //     'Content-Type' : 'application/json'
+          //   }
+          // });
+          //let resultJSON = await result.json();
 
-          let resultJSON = await result.json();
+
+
           users = resultJSON;
           
           var newDiv;
@@ -161,15 +219,18 @@ async function onLoad(){
             задачи, не имеющие исполнителя, сразу закидываем в backlog
             задачи, имеющие исполнителя, добавляем в соотвествующие ячейки grid
         */
+        
+        
+            result = '[{"id":"7b039d12-6503-4346-9bf3-3befadec5bac","subject":"Анализ","description":"","creationAuthor":1,"executor":1,"creationDate":"2021-09-10","planStartDate":"2021-09-10","planEndDate":"2021-09-14","endDate":"2021-09-10","status":1,"order":1},{"id":"fc6c38cd-94d6-4498-95f3-5b7718379e4b","subject":"Планирование","description":"","creationAuthor":1,"executor":1,"creationDate":"2021-09-10","planStartDate":"2021-09-13","planEndDate":"2021-09-14","endDate":"2021-09-10","status":1,"order":1},{"id":"c8510d19-b469-45ab-9023-29deba95ee27","subject":"Проектирование","description":"","creationAuthor":1,"executor":2,"creationDate":"2021-09-10","planStartDate":"2021-09-14","planEndDate":"2021-09-15","endDate":"2021-09-10","status":1,"order":1},{"id":"a370fcca-71b9-4db3-9949-9b3a152998be","subject":"Разработка","description":"","creationAuthor":1,"executor":3,"creationDate":"2021-09-10","planStartDate":"2021-09-14","planEndDate":"2021-09-17","endDate":"2021-09-10","status":1,"order":1},{"id":"db2ef2a7-cf9b-4107-acde-b091ce36e1dd","subject":"Тестирование","description":"","creationAuthor":1,"executor":null,"creationDate":"2021-09-10","planStartDate":"2021-09-16","planEndDate":"2021-09-17","endDate":"2021-09-10","status":1,"order":1},{"id":"db2ef2a7-cf9b-4107-acde-b091ce3ederffef1dd","subject":"Поиск","description":"","creationAuthor":1,"executor":null,"creationDate":"2021-09-10","planStartDate":"2021-09-16","planEndDate":"2021-09-17","endDate":"2021-09-10","status":1,"order":1}]';
+            resultJSON = await JSON.parse(result);
+        //  result = await fetch('http://localhost:3000/tasks', {
+        //     method : 'GET',
+        //     header : {
+        //       'Content-Type' : 'application/json'
+        //     }
          
-         result = await fetch('http://localhost:3000/tasks', {
-            method : 'GET',
-            header : {
-              'Content-Type' : 'application/json'
-            }
-         
-          });
-        resultJSON = await result.json();
+        //   });
+        //resultJSON = await result.json();
         
         for(let i=0;i<resultJSON.length;i++){
           
@@ -183,7 +244,7 @@ async function onLoad(){
          
         drawBaclLog();
          drawTasks();
-         
+
 }
 
 
@@ -192,8 +253,16 @@ function drawBaclLog(){
   document.getElementById('backlog').innerHTML = `<div class="backlog-head"><b>BACKLOG</b></div>
                                                   <div class="search-container">
                                                   <input type="text" id="search-bar" placeholder="Поиск">
-                                                  <span class="span-indent lupa"></span>
-                                                   </div>`
+                                                  <img src="lupa.png" class = "image" onclick="backlog_search()">
+                                                   </div>`;
+  
+  backlog_input = document.getElementById('search-bar');
+  backlog_input.addEventListener('input', function(){
+  if(backlog_input.value.length >= 15){
+      backlog_input.value = backlog_input.value.substring(0, backlog_input.value.length - 1)
+  }
+  });
+
   let whoCreatedTask = '';
   for(let i=0;i<backlog_tasks.length;i++){
 
@@ -208,7 +277,6 @@ function drawBaclLog(){
       
   }
   dragAndDrop();
-
 
 }
 
@@ -329,11 +397,10 @@ function dragAndDrop(){
   for(let i=0; i < backlog_tasks.length;i++){
     
   var log_task = document.getElementById(backlog_tasks[i]['id']);
-  
-  log_task.removeEventListener('mousedown', listener);
-  log_task.addEventListener('mousedown', listener);
-
+  if(log_task !== null){
+    log_task.removeEventListener('mousedown', listener);
+    log_task.addEventListener('mousedown', listener);
+  }
 }
-
 }
 
