@@ -1,8 +1,6 @@
 /*
 TODO list:
 
-2. отображать распределённые таски
-3.реализовать скролы недель
 4. добавить подсказки при наведении
 5. drag-n-drop нераспределённых тасков
 */
@@ -89,7 +87,8 @@ function drawTasks(){
               if(curDayBelongsGap(left_day, user_tasks[thisUserTask]['planStartDate'], user_tasks[thisUserTask]['planEndDate']))
               {
                 newDiv = document.createElement("div");
-                newDiv.setAttribute('class', 'planner-cell ');
+                newDiv.setAttribute('class', 'planner-cell planner-task');
+                newDiv.setAttribute('data-title', user_tasks[thisUserTask]['subject']);
                 newDiv.setAttribute('style', 'height: calc(' + Math.trunc(100/tasks_in_one_day) + '% - 2px);');
                 newDiv.textContent = 'задача ' + (global_task_name + thisUserTask);
                 document.getElementById('cell' + users[i]['id'] + '_' + (weekDay+1)).append(newDiv);
