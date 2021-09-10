@@ -57,6 +57,14 @@
         font-size: 1em;
         min-height: 100px;
        }
+       .planner-cell{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: lawngreen;
+        font-size: 1em;
+        border: 1px solid gray;
+       }
        .planner-row{
            border-bottom: 1px solid gray;
        }
@@ -159,11 +167,11 @@ input#search-bar{
   <div class="main-container">
     <div id="planner" class="item planner-container">
         <div class="item btn-left">
-            <button class ="btn-scroll" id="left">Left</button>
+            <button class ="btn-scroll" onclick="scrolltoRight(false)" id="left">Left</button>
         </div>
         
         <div class="item btn-right">
-            <button class ="btn-scroll" id="left">Right</button>
+            <button class ="btn-scroll" onclick="scrolltoRight(true)" id="right">Right</button>
         </div>
         
         <div class="item planner-head planner-day1" id="day1"></div>

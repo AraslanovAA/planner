@@ -1,7 +1,6 @@
 /*
 TODO list:
-1.сделать массив распределённых тасков
- массив нераспределённых тасков
+
 2. отображать распределённые таски
 3.реализовать скролы недель
 4. добавить подсказки при наведении
@@ -10,7 +9,9 @@ TODO list:
 let left_day;
 let today;
 let users;
-let tasks;
+
+let planner_tasks=[];
+let backlog_tasks =[];
 
 function showDate(){
     let res;
@@ -30,10 +31,80 @@ function showDate(){
         nextDay.setDate(nextDay.getDate()+1);
     }
     left_day.setDate(left_day.getDate()-7);
-    console.log(left_day);
+    
 
     
 }
+
+function scrolltoRight(toRight){
+  for(let i =0; i < users.length;i++){
+    for(let j =0; j < 7;j++){
+      document.getElementById('cell'+users[i]['id']+'_'+(j+1)).innerHTML = "";
+    }
+  }
+  if(toRight){
+  left_day.setDate(left_day.getDate()+7);
+  }
+  else{
+    left_day.setDate(left_day.getDate()-7);
+  }
+  showDate();
+  drawTasks();
+}
+
+function curDayBelongsGap(curDay, planStartDate, planEndDate){
+  
+let start = planStartDate.split('-');
+let end = planEndDate.split('-');
+
+if( (start[0]<curDay.getFullYear()) || ((start[0]==curDay.getFullYear())&&(start[1]<curDay.getMonth()+1)) ||  ((start[0]==curDay.getFullYear())&&(start[1]==curDay.getMonth()+1)&&(start[2]<=curDay.getDate()))  )
+{
+  if( (end[0]>curDay.getFullYear()) || ((end[0]==curDay.getFullYear())&&(end[1]> curDay.getMonth()+1))  || ((end[0]==curDay.getFullYear())&&(end[1]==curDay.getMonth()+1)&&(end[2]>=curDay.getDate()))  )
+  {
+    return true;
+  }
+
+}
+return false;
+}
+
+function drawTasks(){
+  let tasks_in_one_day = 0;
+  let global_task_name = 0;
+  var newDiv;
+  
+  for(let i=0;i<users.length;i++){
+    user_tasks = planner_tasks.filter(task => task['executor']==users[i]['id']);
+    
+    for(let weekDay=0;weekDay<7;weekDay++){
+      left_day.setDate(left_day.getDate()+weekDay)
+          for(let thisUserTask =0; thisUserTask<user_tasks.length;thisUserTask++){
+            
+            tasks_in_one_day += curDayBelongsGap(left_day, user_tasks[thisUserTask]['planStartDate'], user_tasks[thisUserTask]['planEndDate']) ? 1 : 0;
+            }
+            //tasks_in_one_day - нашли количество задач для пользователя в текущий день недели
+            //теперь можно записать задачи в текущий день недели
+            
+            for(let thisUserTask =0; thisUserTask<user_tasks.length;thisUserTask++){
+              if(curDayBelongsGap(left_day, user_tasks[thisUserTask]['planStartDate'], user_tasks[thisUserTask]['planEndDate']))
+              {
+                newDiv = document.createElement("div");
+                newDiv.setAttribute('class', 'planner-cell ');
+                newDiv.setAttribute('style', 'height: calc(' + Math.trunc(100/tasks_in_one_day) + '% - 2px);');
+                newDiv.textContent = 'задача ' + (global_task_name + thisUserTask);
+                document.getElementById('cell' + users[i]['id'] + '_' + (weekDay+1)).append(newDiv);
+              }
+
+            }
+            tasks_in_one_day=0;
+            left_day.setDate(left_day.getDate()-weekDay);
+            
+    }
+    global_task_name +=user_tasks.length;
+  }
+
+}
+
 async function onLoad(){
     
         /*
@@ -50,7 +121,7 @@ async function onLoad(){
 
           let resultJSON = await result.json();
           users = resultJSON;
-          console.log(resultJSON[0]['firstName']);
+          
           var newDiv;
           for(let i=0; i < resultJSON.length;i++){
             newDiv = document.createElement("div");
@@ -95,8 +166,17 @@ async function onLoad(){
          
           });
         resultJSON = await result.json();
-        tasks = resultJSON;
-         console.log(resultJSON);
+        
+        for(let i=0;i<resultJSON.length;i++){
+          
+          if(resultJSON[i]['executor'] === null){
+            backlog_tasks.push(resultJSON[i]);
+          }
+          else{
+            planner_tasks.push(resultJSON[i]);
+          }
+        }
+         
          let whoCreatedTask = '';
          for(let i=0;i<resultJSON.length;i++){
              if(resultJSON[i]['executor'] === null){
@@ -109,6 +189,10 @@ async function onLoad(){
                 document.getElementById('backlog').append(newDiv);
              }
          }
+         drawTasks();
+
+
+         
 
 
 
