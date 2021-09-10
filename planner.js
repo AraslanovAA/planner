@@ -1,8 +1,7 @@
 /*
 TODO list:
-
-4. добавить подсказки при наведении
-5. drag-n-drop нераспределённых тасков
+6. работа search элемента
+7. мобильная версия без бэклога
 */
 let left_day;
 let today;
@@ -67,6 +66,11 @@ return false;
 }
 
 function drawTasks(){
+  for(let i =0; i < users.length;i++){
+    for(let j =0; j < 7;j++){
+      document.getElementById('cell'+users[i]['id']+'_'+(j+1)).innerHTML = "";
+    }
+  }
   let tasks_in_one_day = 0;
   let global_task_name = 0;
   var newDiv;
@@ -124,13 +128,14 @@ async function onLoad(){
           var newDiv;
           for(let i=0; i < resultJSON.length;i++){
             newDiv = document.createElement("div");
-            newDiv.setAttribute('class', 'planner-name planner-row');
+            newDiv.setAttribute('class', 'planner-name planner-row droppable');
+            newDiv.setAttribute('id', 'cell' + resultJSON[i]['id']+'_0');
             newDiv.setAttribute('style','grid-row-start:' +(i+3)+ ';grid-column-start: 1;')
             newDiv.textContent = resultJSON[i]['firstName'];
             document.getElementById('planner').append(newDiv);
             for(let j=0;j<7;j++){
                 newDiv = document.createElement("div");
-            newDiv.setAttribute('class', 'planner-row');
+            newDiv.setAttribute('class', 'planner-row droppable');
             //клетки таблицы имеют id формата: id юзера + номер дня недели от 1 до 7;
             newDiv.setAttribute('id', 'cell' + resultJSON[i]['id']+'_'+(j+1));
             newDiv.setAttribute('style','grid-row-start:' +(i+3)+ ';grid-column-start:' +(j+2)+';')
@@ -176,24 +181,188 @@ async function onLoad(){
           }
         }
          
-         let whoCreatedTask = '';
-         for(let i=0;i<resultJSON.length;i++){
-             if(resultJSON[i]['executor'] === null){
-                
-                whoCreatedTask = users.filter(user => user['id']== resultJSON[i]['creationAuthor']);
-
-                newDiv = document.createElement("div");
-                newDiv.setAttribute('class', 'task');              
-                newDiv.innerHTML ='<span class="creationAuthor">'+whoCreatedTask[0]['username']+'</span> <div class="description">'+ resultJSON[i]['subject']+'</div>';                
-                document.getElementById('backlog').append(newDiv);
-             }
-         }
+        drawBaclLog();
          drawTasks();
+         
+}
 
+
+function drawBaclLog(){
+  let whoCreatedTask = '';
+  for(let i=0;i<backlog_tasks.length;i++){
 
          
+         whoCreatedTask = users.filter(user => user['id']== backlog_tasks[i]['creationAuthor']);
+
+         newDiv = document.createElement("div");
+         newDiv.setAttribute('class', 'task');            
+         newDiv.setAttribute('id', backlog_tasks[i]['id']);
+         newDiv.innerHTML ='<span class="creationAuthor">'+whoCreatedTask[0]['username']+'</span> <div class="description">'+ backlog_tasks[i]['subject']+'</div>';                
+         document.getElementById('backlog').append(newDiv);
+      
+  }
+  dragAndDrop();
+
+
+}
 
 
 
-         
+
+function dragAndDrop(){
+
+  for(let i=0; i < backlog_tasks.length;i++){
+    
+  var ball = document.getElementById(backlog_tasks[i]['id']);;
+    
+  ball.onmousedown = function(event) {
+    let ball_width = ball.offsetWidth;
+    let shiftX = event.clientX - ball.getBoundingClientRect().left;
+    let shiftY = event.clientY - ball.getBoundingClientRect().top;
+  
+    ball.style.position = 'absolute';
+    ball.style.zIndex = 1000;
+    document.body.append(ball);
+    ball.style.width = ball_width + 'px';
+    moveAt(event.pageX, event.pageY);
+  
+    // переносит мяч на координаты (pageX, pageY),
+    // дополнительно учитывая изначальный сдвиг относительно указателя мыши
+    function moveAt(pageX, pageY) {
+      ball.style.left = pageX - shiftX + 'px';
+      ball.style.top = pageY - shiftY + 'px';
+    }
+    function returnToDom(){
+      let event = new Event("mouseup");
+      ball.dispatchEvent(event);
+    }
+
+    let currentDroppable = null;
+    function onMouseMove(event) {
+      moveAt(event.pageX, event.pageY);
+
+      ball.hidden = true;
+      let elemBelow = document.elementFromPoint(event.clientX, event.clientY);
+      ball.hidden = false;
+      if (!elemBelow) {returnToDom();}
+      else{
+      let droppableBelow = elemBelow.closest('.droppable');
+
+      if (currentDroppable != droppableBelow) {
+        // мы либо залетаем на цель, либо улетаем из неё
+        // внимание: оба значения могут быть null
+        //   currentDroppable=null,
+        //     если мы были не над droppable до этого события (например, над пустым пространством)
+        //   droppableBelow=null,
+        //     если мы не над droppable именно сейчас, во время этого события
+    
+        if (currentDroppable) {
+          // логика обработки процесса "вылета" из droppable (удаляем подсветку)
+          currentDroppable.classList.remove("hilight");
+        }
+        currentDroppable = droppableBelow;
+        if (currentDroppable) {
+          // логика обработки процесса, когда мы "влетаем" в элемент droppable
+          currentDroppable.classList.add("hilight");
+
+        }
+      }
+    }
+    }
+  
+    // передвигаем мяч при событии mousemove
+    document.addEventListener('mousemove', onMouseMove);
+  
+    // отпустить мяч, удалить ненужные обработчики
+    ball.onmouseup = function() {
+      document.removeEventListener('mousemove', onMouseMove);
+      ball.onmouseup = null;
+      
+      
+      ball.remove();
+      if(currentDroppable === null){
+        drawBaclLog();
+      }
+      else{
+
+          currentDroppable.classList.remove("hilight");
+          let parse = currentDroppable.getAttribute('id');
+          parse = parse.substr(4);
+
+          parse = parse.split('_');
+          
+          for(let b_task =0; b_task < backlog_tasks.length;b_task++){
+            if(ball.getAttribute('id') == backlog_tasks[b_task]['id']){
+              backlog_tasks[b_task]['executor'] = parse[0];
+              if(parse[1] != 0){
+                left_day.setDate(left_day.getDate() + (parse[1]-1));
+                let changeDateType = '';
+                changeDateType += left_day.getFullYear();
+                changeDateType += '-';
+                changeDateType += (left_day.getMonth()+1);
+                changeDateType += '-';
+                changeDateType += left_day.getDate();
+                backlog_tasks[b_task]['planStartDate'] = changeDateType;
+                backlog_tasks[b_task]['planEndDate'] = changeDateType;
+                left_day.setDate(left_day.getDate() - (parse[1]-1));
+              }
+
+              planner_tasks.push(backlog_tasks[b_task]);
+              
+            }
+            
+          }
+          
+          backlog_tasks = backlog_tasks.filter(task => task['id'] != ball.getAttribute('id'));
+           drawTasks();
+          
+      }
+      
+      //я двигал элемент backlog_tasks[i]['id']
+      //и перетащил его на элемент currentDroppable
+      //используя getAttribut('id) распарсить cell[userid]_[weekday]
+
+
+    };
+  
+  };
+  
+  ball.ondragstart = function() {
+    return false;
+  };
+ 
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
 }
