@@ -188,6 +188,12 @@ async function onLoad(){
 
 
 function drawBaclLog(){
+  document.getElementById('backlog').innerHTML = '';
+  document.getElementById('backlog').innerHTML = `<div class="backlog-head"><b>BACKLOG</b></div>
+                                                  <div class="search-container">
+                                                  <input type="text" id="search-bar" placeholder="Поиск">
+                                                  <span class="span-indent lupa"></span>
+                                                   </div>`
   let whoCreatedTask = '';
   for(let i=0;i<backlog_tasks.length;i++){
 
@@ -207,162 +213,127 @@ function drawBaclLog(){
 }
 
 
+var listener = function(event) {//перемещение таска из бэклога
+  var log_task = event.currentTarget;
+  let log_task_width = log_task.offsetWidth;
+  let shiftX = event.clientX - log_task.getBoundingClientRect().left;
+  let shiftY = event.clientY - log_task.getBoundingClientRect().top;
+
+  log_task.style.position = 'absolute';
+  log_task.style.zIndex = 1000;
+  document.body.append(log_task);
+  log_task.style.width = log_task_width + 'px';
+  moveAt(event.pageX, event.pageY);
+
+  function moveAt(pageX, pageY) {
+    log_task.style.left = pageX - shiftX + 'px';
+    log_task.style.top = pageY - shiftY + 'px';
+  }
+  function returnToDom(){
+    let event = new Event("mouseup");
+    log_task.dispatchEvent(event);
+  }
+
+  let currentDroppable = null;
+  function onMouseMove(event) {
+    moveAt(event.pageX, event.pageY);
+
+    log_task.hidden = true;
+    let elemBelow = document.elementFromPoint(event.clientX, event.clientY);
+    log_task.hidden = false;
+    if (!elemBelow) {returnToDom();}
+    else{
+    let droppableBelow = elemBelow.closest('.droppable');
+
+    if (currentDroppable != droppableBelow) {
+        
+      if (currentDroppable) {
+        // вылет из droppable 
+        currentDroppable.classList.remove("hilight");
+      }
+      currentDroppable = droppableBelow;
+      if (currentDroppable) {
+        // влетаем в элемент droppable
+        currentDroppable.classList.add("hilight");
+
+      }
+    }
+  }
+  }
+
+  
+  document.addEventListener('mousemove', onMouseMove);
+
+  
+  log_task.onmouseup = function() {
+    document.removeEventListener('mousemove', onMouseMove);
+    log_task.onmouseup = null;
+    
+    
+    log_task.remove();
+    if(currentDroppable === null){
+      drawBaclLog();//отпустили таск не на клетку, заново перерисовываем его в бэклог
+    }
+    else{
+        /*
+          В случае удачного закидывания на клетку парсим id пользователя и номер дня недели из currentDroppable.getAttribute('id'); cell[userid]_[weekday]
+          переносим таск из массива бэклога в массив планнера, по id log_task.getAttribute('id') 
+          перерисовываем бэклог
+        */
+        currentDroppable.classList.remove("hilight");
+        let parse = currentDroppable.getAttribute('id');
+        parse = parse.substr(4);
+
+        parse = parse.split('_');
+        
+        for(let b_task =0; b_task < backlog_tasks.length;b_task++){
+          if(log_task.getAttribute('id') == backlog_tasks[b_task]['id']){
+            backlog_tasks[b_task]['executor'] = parse[0];
+            if(parse[1] != 0){
+              left_day.setDate(left_day.getDate() + (parse[1]-1));
+              let changeDateType = '';
+              changeDateType += left_day.getFullYear();
+              changeDateType += '-';
+              changeDateType += (left_day.getMonth()+1);
+              changeDateType += '-';
+              changeDateType += left_day.getDate();
+              backlog_tasks[b_task]['planStartDate'] = changeDateType;
+              backlog_tasks[b_task]['planEndDate'] = changeDateType;
+              left_day.setDate(left_day.getDate() - (parse[1]-1));
+            }
+
+            planner_tasks.push(backlog_tasks[b_task]);
+            
+          }
+          
+        }
+        
+        backlog_tasks = backlog_tasks.filter(task => task['id'] != log_task.getAttribute('id'));
+         drawTasks();
+        // drawBaclLog();
+        
+    }
+ 
+
+  };
+  log_task.ondragstart = function() {
+    return false;
+  };
+};
+
+
 
 
 function dragAndDrop(){
 
   for(let i=0; i < backlog_tasks.length;i++){
     
-  var ball = document.getElementById(backlog_tasks[i]['id']);;
-    
-  ball.onmousedown = function(event) {
-    let ball_width = ball.offsetWidth;
-    let shiftX = event.clientX - ball.getBoundingClientRect().left;
-    let shiftY = event.clientY - ball.getBoundingClientRect().top;
+  var log_task = document.getElementById(backlog_tasks[i]['id']);
   
-    ball.style.position = 'absolute';
-    ball.style.zIndex = 1000;
-    document.body.append(ball);
-    ball.style.width = ball_width + 'px';
-    moveAt(event.pageX, event.pageY);
-  
-    // переносит мяч на координаты (pageX, pageY),
-    // дополнительно учитывая изначальный сдвиг относительно указателя мыши
-    function moveAt(pageX, pageY) {
-      ball.style.left = pageX - shiftX + 'px';
-      ball.style.top = pageY - shiftY + 'px';
-    }
-    function returnToDom(){
-      let event = new Event("mouseup");
-      ball.dispatchEvent(event);
-    }
-
-    let currentDroppable = null;
-    function onMouseMove(event) {
-      moveAt(event.pageX, event.pageY);
-
-      ball.hidden = true;
-      let elemBelow = document.elementFromPoint(event.clientX, event.clientY);
-      ball.hidden = false;
-      if (!elemBelow) {returnToDom();}
-      else{
-      let droppableBelow = elemBelow.closest('.droppable');
-
-      if (currentDroppable != droppableBelow) {
-        // мы либо залетаем на цель, либо улетаем из неё
-        // внимание: оба значения могут быть null
-        //   currentDroppable=null,
-        //     если мы были не над droppable до этого события (например, над пустым пространством)
-        //   droppableBelow=null,
-        //     если мы не над droppable именно сейчас, во время этого события
-    
-        if (currentDroppable) {
-          // логика обработки процесса "вылета" из droppable (удаляем подсветку)
-          currentDroppable.classList.remove("hilight");
-        }
-        currentDroppable = droppableBelow;
-        if (currentDroppable) {
-          // логика обработки процесса, когда мы "влетаем" в элемент droppable
-          currentDroppable.classList.add("hilight");
-
-        }
-      }
-    }
-    }
-  
-    // передвигаем мяч при событии mousemove
-    document.addEventListener('mousemove', onMouseMove);
-  
-    // отпустить мяч, удалить ненужные обработчики
-    ball.onmouseup = function() {
-      document.removeEventListener('mousemove', onMouseMove);
-      ball.onmouseup = null;
-      
-      
-      ball.remove();
-      if(currentDroppable === null){
-        drawBaclLog();
-      }
-      else{
-
-          currentDroppable.classList.remove("hilight");
-          let parse = currentDroppable.getAttribute('id');
-          parse = parse.substr(4);
-
-          parse = parse.split('_');
-          
-          for(let b_task =0; b_task < backlog_tasks.length;b_task++){
-            if(ball.getAttribute('id') == backlog_tasks[b_task]['id']){
-              backlog_tasks[b_task]['executor'] = parse[0];
-              if(parse[1] != 0){
-                left_day.setDate(left_day.getDate() + (parse[1]-1));
-                let changeDateType = '';
-                changeDateType += left_day.getFullYear();
-                changeDateType += '-';
-                changeDateType += (left_day.getMonth()+1);
-                changeDateType += '-';
-                changeDateType += left_day.getDate();
-                backlog_tasks[b_task]['planStartDate'] = changeDateType;
-                backlog_tasks[b_task]['planEndDate'] = changeDateType;
-                left_day.setDate(left_day.getDate() - (parse[1]-1));
-              }
-
-              planner_tasks.push(backlog_tasks[b_task]);
-              
-            }
-            
-          }
-          
-          backlog_tasks = backlog_tasks.filter(task => task['id'] != ball.getAttribute('id'));
-           drawTasks();
-          
-      }
-      
-      //я двигал элемент backlog_tasks[i]['id']
-      //и перетащил его на элемент currentDroppable
-      //используя getAttribut('id) распарсить cell[userid]_[weekday]
-
-
-    };
-  
-  };
-  
-  ball.ondragstart = function() {
-    return false;
-  };
- 
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  log_task.removeEventListener('mousedown', listener);
+  log_task.addEventListener('mousedown', listener);
 
 }
 
-
-
-
-
-
 }
+
